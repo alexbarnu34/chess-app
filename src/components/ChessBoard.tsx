@@ -12,6 +12,14 @@ import bB from '../assets/pieces/bB.svg';
 import bN from '../assets/pieces/bN.svg';
 import bP from '../assets/pieces/bP.svg';
 import { useState } from "react";
+import { Chess , Square} from 'chess.js';
+
+const chess = new Chess();
+
+function toAlgebraic(row: number, col: number): string {
+  const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  return files[col] + (8 - row);
+}
 
 const pieceMap: { [key: string]: string } = {
     wK, wQ, wR, wB, wN, wP,
@@ -35,21 +43,41 @@ const pieceMap: { [key: string]: string } = {
 
     function handleSquareClick(row: number, col: number) {
       const piece = board[row][col];
-  
+
       if (selected === null) {
         if (piece) {
           setSelected({ row, col });
         }
       } else {
-
         if (selected.row === row && selected.col === col) {
           setSelected(null);
           return;
         }
-        const newBoard = board.map((r) => [...r]);
-        newBoard[row][col] = board[selected.row][selected.col];
-        newBoard[selected.row][selected.col] = null;
-        setBoard(newBoard);
+
+        const from = toAlgebraic(selected.row, selected.col);
+        const to = toAlgebraic(row, col);
+
+        const move = chess.move({ from, to });
+
+        if (move) {
+          const newBoard = Array.from({ length: 8 }, (_, r) =>
+            Array.from({ length: 8 }, (_, c) => {
+              const square = toAlgebraic(r, c) as Square;
+              const piece = chess.get(square);
+          
+              if (piece) {
+                const color = piece.color === 'w' ? 'w' : 'b';
+                const type = piece.type.toUpperCase(); // r, n, b, etc.
+                return color + type;
+              }
+          
+              return null;
+            })
+          );
+
+          setBoard(newBoard);
+        }
+
         setSelected(null);
       }
     }
