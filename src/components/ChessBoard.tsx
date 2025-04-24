@@ -12,7 +12,7 @@ import bB from '../assets/pieces/bB.svg';
 import bN from '../assets/pieces/bN.svg';
 import bP from '../assets/pieces/bP.svg';
 import { useState } from "react";
-import { Chess , Square} from 'chess.js';
+import { Chess } from 'chess.js';
 
 const chess = new Chess();
 
@@ -41,44 +41,60 @@ const pieceMap: { [key: string]: string } = {
 
     const [selected, setSelected] = useState<{ row: number; col: number } | null>(null);
 
+    const [validMoves, setValidMoves] = useState<{ row: number; col: number }[]>([]);
+
     function handleSquareClick(row: number, col: number) {
       const piece = board[row][col];
-
+    
       if (selected === null) {
+        // Selectăm doar dacă există o piesă pe pătrățel
         if (piece) {
+          const square = toAlgebraic(row, col);
+          const moves = chess.moves({ square: square as any, verbose: true }) as any[];
+    
+          const targets = moves.map((move: any) => {
+            const col = move.to.charCodeAt(0) - 'a'.charCodeAt(0);
+            const row = 8 - Number(move.to[1]);
+            return { row, col };
+          });
+    
           setSelected({ row, col });
+          setValidMoves(targets); // doar dacă am piese de mutat
         }
       } else {
+        // Dacă dăm click pe aceeași piesă, o deselectăm
         if (selected.row === row && selected.col === col) {
           setSelected(null);
+          setValidMoves([]);
           return;
         }
-
+    
+        // Încercăm mutarea
         const from = toAlgebraic(selected.row, selected.col);
         const to = toAlgebraic(row, col);
-
         const move = chess.move({ from, to });
-
+    
         if (move) {
           const newBoard = Array.from({ length: 8 }, (_, r) =>
             Array.from({ length: 8 }, (_, c) => {
-              const square = toAlgebraic(r, c) as Square;
-              const piece = chess.get(square);
-          
+              const square = toAlgebraic(r, c);
+              const piece = chess.get(square as any);
+    
               if (piece) {
                 const color = piece.color === 'w' ? 'w' : 'b';
-                const type = piece.type.toUpperCase(); // r, n, b, etc.
+                const type = piece.type.toUpperCase();
                 return color + type;
               }
-          
+    
               return null;
             })
           );
-
+    
           setBoard(newBoard);
         }
-
+    
         setSelected(null);
+        setValidMoves([]);
       }
     }
 
@@ -88,11 +104,18 @@ const pieceMap: { [key: string]: string } = {
           row.map((pieceCode, colIndex) => {
             const isDark = (rowIndex + colIndex) % 2 === 1;
             const bgColor = isDark ? 'bg-green-700' : 'bg-green-100';
+
+            const isValidTarget = validMoves.some(
+              (move) => move.row === rowIndex && move.col === colIndex
+            );
+
+            const highlight = isValidTarget ? 'ring-2 ring-blue-400' : '';
+
             return (
               <div
               key={`${rowIndex}-${colIndex}`}
               onClick={() => handleSquareClick(rowIndex, colIndex)}
-              className={`w-16 h-16 ${bgColor} flex items-center justify-center 
+              className={`w-16 h-16 ${bgColor} ${highlight} flex items-center justify-center 
                 ${selected?.row === rowIndex && selected?.col === colIndex ? 'ring-4 ring-yellow-400' : ''}`}
             >
               {pieceCode && (
