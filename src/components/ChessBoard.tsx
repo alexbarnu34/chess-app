@@ -43,6 +43,8 @@ const pieceMap: { [key: string]: string } = {
 
     const [validMoves, setValidMoves] = useState<{ row: number; col: number }[]>([]);
 
+    const [lastMove, setLastMove] = useState<{ from: { row: number; col: number }, to: { row: number; col: number } } | null>(null);
+
     function handleSquareClick(row: number, col: number) {
       const piece = board[row][col];
     
@@ -75,6 +77,16 @@ const pieceMap: { [key: string]: string } = {
         const move = chess.move({ from, to });
     
         if (move) {
+          const fromRow = selected.row;
+          const fromCol = selected.col;
+          const toRow = row;
+          const toCol = col;
+
+          setLastMove({
+            from: { row: fromRow, col: fromCol },
+            to: { row: toRow, col: toCol },
+          });
+
           const newBoard = Array.from({ length: 8 }, (_, r) =>
             Array.from({ length: 8 }, (_, c) => {
               const square = toAlgebraic(r, c);
@@ -111,11 +123,17 @@ const pieceMap: { [key: string]: string } = {
 
             const highlight = isValidTarget ? 'ring-2 ring-blue-400' : '';
 
+            const isLastMoveSquare =
+            (lastMove?.from.row === rowIndex && lastMove?.from.col === colIndex) ||
+            (lastMove?.to.row === rowIndex && lastMove?.to.col === colIndex);
+
+            const lastMoveHighlight = isLastMoveSquare ? 'bg-yellow-300' : '';
+
             return (
               <div
               key={`${rowIndex}-${colIndex}`}
               onClick={() => handleSquareClick(rowIndex, colIndex)}
-              className={`w-16 h-16 ${bgColor} ${highlight} flex items-center justify-center 
+              className={`w-16 h-16 ${bgColor} ${highlight} ${lastMoveHighlight} flex items-center justify-center 
                 ${selected?.row === rowIndex && selected?.col === colIndex ? 'ring-4 ring-yellow-400' : ''}`}
             >
               {pieceCode && (
